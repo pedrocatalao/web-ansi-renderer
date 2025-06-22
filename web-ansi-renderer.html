@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ANSI Viewer</title>
+  <style>
+    html, body {
+      margin: 0;
+      background: black;
+      color: white;
+      font-family: monospace;
+      font-size: 14px;
+      white-space: pre;
+    }
+    #output span {
+      white-space: pre;
+    }
+  </style>
+</head>
+<body>
+  <input type="file" id="fileInput" accept=".ans,.txt" />
+  <pre id="output"></pre>
+
+  <script>
+    const ansiColors = {
+      30: 'black', 31: 'red', 32: 'green', 33: 'yellow',
+      34: 'blue', 35: 'magenta', 36: 'cyan', 37: 'white',
+      90: 'gray', 91: 'lightcoral', 92: 'lightgreen', 93: 'lightyellow',
+      94: 'lightblue', 95: 'violet', 96: 'lightcyan', 97: 'white'
+    };
+
+    const bgColors = {
+      40: 'black', 41: 'red', 42: 'green', 43: 'yellow',
+      44: 'blue', 45: 'magenta', 46: 'cyan', 47: 'white'
+    };
+
+    function ansiToHtml(text) {
+      return text.replace(/\x1b\[([0-9;]*)m/g, (_, codes) => {
+        const attrs = codes.split(';').map(Number);
+        let color = '', bg = '', bold = false;
+
+        for (let code of attrs) {
+          if (code === 1) bold = true;
+          else if (ansiColors[code]) color = ansiColors[code];
+          else if (bgColors[code]) bg = bgColors[code];
+          else if (code === 0) {
+            color = bg = '';
+            bold = false;
+          }
+        }
+
+        const styles = [];
+        if (color) styles.push(`color: ${color}`);
+        if (bg) styles.push(`background-color: ${bg}`);
+        if (bold) styles.push(`font-weight: bold`);
+
+        return `</span><span style="${styles.join('; ')}">`;
+      }) + '</span>'; // final closing span
+    }
+
+    document.getElementById('fileInput').addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = event => {
+        const rawText = event.target.result;
+        const html = ansiToHtml(rawText);
+        document.getElementById('output').innerHTML = html;
+      };
+      reader.readAsText(file);
+    });
+  </script>
+</body>
+</html>
